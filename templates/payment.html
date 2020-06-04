@@ -1,0 +1,237 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block extra_head %}
+  <title>Checkout</title>
+
+  <style>
+    #stripeBtnLabel {
+    font-family: "Helvetica Neue", Helvetica, sans-serif;
+    font-size: 16px;
+    font-variant: normal;
+    padding: 0;
+    margin: 0;
+    -webkit-font-smoothing: antialiased;
+    font-weight: 500;
+    display: block;
+  }
+
+    #stripeBtn {
+    border: none;
+    border-radius: 4px;
+    outline: none;
+    text-decoration: none;
+    color: #fff;
+    background: #32325d;
+    white-space: nowrap;
+    display: inline-block;
+    height: 40px;
+    line-height: 40px;
+    box-shadow: 0 4px 6px rgba(50, 50, 93, .11), 0 1px 3px rgba(0, 0, 0, .08);
+    border-radius: 4px;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.025em;
+    text-decoration: none;
+    -webkit-transition: all 150ms ease;
+    transition: all 150ms ease;
+    float: left;
+    width: 100%
+  }
+
+    button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 7px 14px rgba(50, 50, 93, .10), 0 3px 6px rgba(0, 0, 0, .08);
+    background-color: #43458b;
+  }
+
+    .stripe-form {
+    padding: 5px 30px;
+  }
+
+    #card-errors {
+    height: 20px;
+    padding: 4px 0;
+    color: #fa755a;
+  }
+
+
+  
+    .stripe-form-row {
+    width: 100%;
+    float: left;
+    margin-top: 5px;
+    margin-bottom: 5px;
+  }
+
+    .StripeElement {
+    box-sizing: border-box;
+
+    height: 40px;
+
+    padding: 10px 12px;
+
+    border: 1px solid transparent;
+    border-radius: 4px;
+    background-color: white;
+
+    box-shadow: 0 1px 3px 0 #e6ebf1;
+    -webkit-transition: box-shadow 150ms ease;
+    transition: box-shadow 150ms ease;
+  }
+
+    .StripeElement--focus {
+    box-shadow: 0 1px 3px 0 #cfd7df;
+  }
+
+    .StripeElement--invalid {
+    border-color: #fa755a;
+  }
+
+   .StripeElement--webkit-autofill {
+    background-color: #fefde5 !important;
+  }
+
+    .current-card-form {
+    display: none;
+  }
+
+
+  </style>
+{% endblock extra_head %}
+
+{% block content %}
+  <main>
+    <div class="container wow fadeIn">
+      <h2 class="my-5 h2 text-center">Payment</h2>
+      <div class="row">
+        <div class="col-md-8 mb-4">
+          <div class="card">
+                <script src="https://js.stripe.com/v3/"></script>
+                {% if card %}
+                  <div style="padding: 5px 30px;">
+                      <div class="custom-control custom-checkbox">
+                          <input type="checkbox" class="custom-control-input" name="use_default_card" id="use_default_card">
+                          <label class="custom-control-label" for="use_default_card">Use default card:
+                            **** **** **** {{ card.last4 }} 
+                          <span>Exp: {{ card.exp_month }}/{{ card.exp_year }}</span></label>
+                      </div>
+                  </div>
+                {% endif %}
+
+                <div class="current-card-form">
+                  <form method="POST" class="stripe-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="use_default" value="true">
+                    <div class="stripe-form-row">
+                      <button id="stripeBtn">Submit Payment</button>
+                    </div>
+                    <div id="card-errors" role="alert"></div>
+                  </form>
+                </div>
+
+                <div class="new-card-form">
+                  <form action="" method="post" id="stripe-form" class="stripe-form">
+                      {% csrf_token %}
+                    <div class="stripe-form-row" id="creditCard">
+                      <label for="card-element" id="stripeBtnLabel">
+                        Credit or debit card
+                      </label>
+                      <div id="card-element">
+                        
+                      </div>
+
+                      <div id="card-errors" role="alert"></div>
+                    </div>
+                    <div class="stripe-form-row">
+                      <button id="stripeBtn">Submit Payment</button>
+                    </div>
+                    <div class="stripe-form-row">
+                      <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input" name="save" id="save_card_info">
+                        <label for="save_card_info" class="custom-control-label">Save for future purchases</label>
+                      </div>
+                    </div>
+                    <div id="card-errors" role="alert"></div>
+                  </form>
+                </div>
+          </div>
+        </div>
+        
+         <div class="col-md-4 mb-4">
+          {% include 'order_snippet.html' %}
+        </div>
+      </div>
+    </div>
+  </main>
+{% endblock content %}
+
+{% block extra_scripts %}
+  <script>
+    var stripe = Stripe('pk_test_ll5fqVEH5qv7k3BliYR7cOV700AP5CKvv5');
+    var elements = stripe.elements();
+    var style = {
+    base: {
+      color: '#32325d',
+      fontFamily: '"Helvetica Neue", Helvetica, sans-serif',
+      fontSmoothing: 'antialiased',
+      fontSize: '16px',
+      '::placeholder': {
+        color: '#aab7c4'
+      }
+    },
+    invalid: {
+      color: '#fa755a',
+      iconColor: '#fa755a'
+    }
+  };
+      
+      var card = elements.create('card', {style: style});
+      
+      card.mount('#card-element');
+      
+      card.addEventListener('change', function(event) {
+        var displayError = document.getElementById('card-errors');
+        if (event.error) {
+          displayError.textContent = event.error.message;
+        } else {
+          displayError.textContent = '';
+        }
+      });
+      var form = document.getElementById('stripe-form');
+      form.addEventListener('submit', function(event) {
+        event.preventDefault();
+
+        stripe.createToken(card).then(function(result) {
+          if (result.error) {
+            var errorElement = document.getElementById('card-errors');
+            errorElement.textContent = result.error.message;
+          } else {
+            stripeTokenHandler(result.token);
+          }
+        });
+      });
+      function stripeTokenHandler(token) {
+      var form = document.getElementById('stripe-form');
+      var hiddenInput = document.createElement('input');
+      hiddenInput.setAttribute('type', 'hidden');
+      hiddenInput.setAttribute('name', 'stripeToken');
+      hiddenInput.setAttribute('value', token.id);
+      form.appendChild(hiddenInput);
+
+      form.submit();
+    }
+
+    var currentCardForm = $('.current-card-form');
+    var newCardForm = $('.new-card-form');
+    var use_default_card = document.querySelector("input[name=use_default_card]");
+    use_default_card.addEventListener('change', function(){
+      if(this.checked){
+        newCardForm.hide();
+        currentCardForm.show();
+      } else {
+        newCardForm.show();
+        currentCardForm.hide()
+      }
+    })
+  </script>
+{% endblock extra_scripts %}
